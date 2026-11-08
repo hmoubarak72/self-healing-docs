@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "docheal"
+version = "1.0.0"
+description = "Self-healing technical documentation: detect docs made stale by code changes and fix them in CI."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Hesham Moubarak" }]
+keywords = ["documentation", "github-action", "llm", "embeddings", "ci"]
+dependencies = [
+  "PyGithub>=2.1",
+  "anthropic>=0.40",
+  "openai>=1.40",
+]
+
+[project.optional-dependencies]
+vector = ["chromadb>=0.5"]
+dev = ["pytest>=8", "pytest-cov>=5", "ruff>=0.5"]
+
+[project.scripts]
+docheal = "docheal.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["docheal*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+extend-exclude = ["examples"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "W"]
+ignore = ["B904", "E501", "E741", "B905", "UP042"]
+
+[tool.ruff.lint.per-file-ignores]
+"benchmarks/*" = ["E402"]

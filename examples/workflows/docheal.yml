@@ -1,0 +1,29 @@
+# Copy to .github/workflows/docheal.yml in your repository.
+name: DocHeal
+
+on:
+  pull_request:
+    paths: ["**/*.py", "**/*.md"]
+
+permissions:
+  contents: write        # push the docheal/fix-<pr> branch
+  pull-requests: write   # open the fix PR and post the summary comment
+
+jobs:
+  docs:
+    if: ${{ !startsWith(github.head_ref, 'docheal/') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # DocHeal diffs against the PR base commit
+      - id: docheal
+        uses: hmoubarak72/self-healing-docs@v1
+        with:
+          anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}   # or openai-api-key
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}         # embeddings (optional)
+          confidence-threshold: "0.8"
+          auto-merge: "false"
+          doc-paths: "README.md,docs/**/*.md"
+          exclude: "tests/**"
+      - run: echo "${{ steps.docheal.outputs.summary }}"

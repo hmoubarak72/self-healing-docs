@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install -e ".[dev]"
+      - run: ruff check .
+      - run: pytest --cov=docheal --cov-report=term-missing
+      - name: Accuracy benchmark (gate F1 >= 0.9)
+        run: python -m benchmarks.run --min-f1 0.9 --markdown "$GITHUB_STEP_SUMMARY"
+
+  real-repo-benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e .
+      - name: Held-out benchmark on encode/httpx
+        run: python -m benchmarks.real_repo --clone --markdown "$GITHUB_STEP_SUMMARY"
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Action image
+        run: docker compose build docheal
+      - name: Tests inside the image
+        run: docker compose run --rm tests
+      - name: Benchmark inside the image
+        run: docker compose run --rm benchmark
+      - name: Simulated PR demo
+        run: docker compose run --rm demo
+
+  action-smoke:
+    # Runs the Action exactly as consumers will (Dockerfile build + entrypoint), offline engine.
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: docheal
+        uses: ./
+        with:
+          llm-provider: rules
+          mode: comment-only
+          exclude: "examples/**,benchmarks/**,tests/**"
+      - run: echo "${{ steps.docheal.outputs.summary }}"

@@ -1,0 +1,109 @@
+name: "DocHeal — Self-Healing Docs"
+description: "Detects documentation made stale by code changes, auto-fixes high-confidence cases in a PR, and flags the rest for review."
+author: "Hesham Moubarak"
+branding:
+  icon: "book-open"
+  color: "green"
+
+inputs:
+  github-token:
+    description: "Token used to comment on the PR and open the fix PR. Needs contents:write and pull-requests:write."
+    required: false
+    default: ${{ github.token }}
+  anthropic-api-key:
+    description: "Anthropic API key (Claude). Used when llm-provider is auto or anthropic."
+    required: false
+    default: ""
+  openai-api-key:
+    description: "OpenAI API key (GPT-4o and text-embedding-3-small)."
+    required: false
+    default: ""
+  llm-provider:
+    description: "auto | anthropic | openai | rules. 'rules' (and 'auto' with no keys) runs the deterministic offline engine."
+    required: false
+    default: "auto"
+  model:
+    description: "Override the LLM model name (default claude-sonnet-5-5 / gpt-4o)."
+    required: false
+    default: ""
+  embedding-provider:
+    description: "auto | openai | hashing"
+    required: false
+    default: "auto"
+  confidence-threshold:
+    description: "Minimum confidence (0-1) for a correction to be auto-fixed; below it the section is flagged for review."
+    required: false
+    default: "0.8"
+  similarity-threshold:
+    description: "Cosine similarity for embedding-based code-to-doc links (default 0.45 OpenAI / 0.35 hashing)."
+    required: false
+    default: ""
+  auto-merge:
+    description: "Merge the fix PR automatically when every fix is high-confidence."
+    required: false
+    default: "false"
+  mode:
+    description: "auto (fix PR + comment) | comment-only"
+    required: false
+    default: "auto"
+  code-paths:
+    description: "Comma-separated globs of code to analyse."
+    required: false
+    default: "**/*.py"
+  doc-paths:
+    description: "Comma-separated globs of markdown docs."
+    required: false
+    default: "**/*.md"
+  exclude:
+    description: "Comma-separated globs to ignore."
+    required: false
+    default: ""
+  max-sections:
+    description: "Maximum number of suspect doc sections sent to the LLM per run (cost control)."
+    required: false
+    default: "40"
+  fail-on-stale:
+    description: "Fail the check when sections are flagged for human review."
+    required: false
+    default: "false"
+
+outputs:
+  stale-sections:
+    description: "JSON list of stale sections and the issues found."
+  corrections:
+    description: "JSON list of generated corrections with mode and confidence."
+  stale-count:
+    description: "Number of stale sections."
+  auto-fixed-count:
+    description: "Number of sections auto-fixed."
+  flagged-count:
+    description: "Number of sections flagged for review."
+  fix-pr-url:
+    description: "URL of the generated documentation-fix PR (empty if none)."
+  comment-url:
+    description: "URL of the summary comment on the PR."
+  report-path:
+    description: "Path to the full JSON report inside the workspace."
+  summary:
+    description: "One-line summary, e.g. 'Doc Check Results: 3 sections verified accurate, 1 auto-fixed, 2 flagged for review.'"
+
+runs:
+  using: "docker"
+  image: "Dockerfile"
+  args: ["action"]
+  env:
+    DOCHEAL_GITHUB_TOKEN: ${{ inputs.github-token }}
+    ANTHROPIC_API_KEY: ${{ inputs.anthropic-api-key }}
+    OPENAI_API_KEY: ${{ inputs.openai-api-key }}
+    DOCHEAL_LLM_PROVIDER: ${{ inputs.llm-provider }}
+    DOCHEAL_MODEL: ${{ inputs.model }}
+    DOCHEAL_EMBEDDING_PROVIDER: ${{ inputs.embedding-provider }}
+    DOCHEAL_CONFIDENCE_THRESHOLD: ${{ inputs.confidence-threshold }}
+    DOCHEAL_SIMILARITY_THRESHOLD: ${{ inputs.similarity-threshold }}
+    DOCHEAL_AUTO_MERGE: ${{ inputs.auto-merge }}
+    DOCHEAL_MODE: ${{ inputs.mode }}
+    DOCHEAL_CODE_PATHS: ${{ inputs.code-paths }}
+    DOCHEAL_DOC_PATHS: ${{ inputs.doc-paths }}
+    DOCHEAL_EXCLUDE: ${{ inputs.exclude }}
+    DOCHEAL_MAX_SECTIONS: ${{ inputs.max-sections }}
+    DOCHEAL_FAIL_ON_STALE: ${{ inputs.fail-on-stale }}

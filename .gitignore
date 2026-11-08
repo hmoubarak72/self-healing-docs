@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.coverage
+build/
+dist/
+.venv/
+venv/
+.env
+.docheal/chroma/
+.docheal/report.json
+examples/sample_project/.docheal/

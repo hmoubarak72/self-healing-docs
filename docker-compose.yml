@@ -1,0 +1,46 @@
+# Local verification harness for the Action image.
+#   docker compose run --rm tests        # unit + integration tests inside the image
+#   docker compose run --rm benchmark    # labelled accuracy benchmark
+#   docker compose run --rm demo         # simulate a PR against the sample project
+#   docker compose up --abort-on-container-exit   # all of the above
+services:
+  docheal:
+    build:
+      context: .
+      args:
+        WITH_CHROMA: "true"
+        WITH_DEV: "true"
+        BASE_IMAGE: ${BASE_IMAGE:-python:3.12-slim}
+    image: docheal:local
+    entrypoint: ["docheal"]
+    command: ["--version"]
+
+  tests:
+    image: docheal:local
+    depends_on: [docheal]
+    working_dir: /src
+    volumes:
+      - ./:/src:ro
+    environment:
+      PYTHONDONTWRITEBYTECODE: "1"
+    entrypoint: ["sh", "-c"]
+    command: ["git config --global --add safe.directory '*' && python -m pytest -p no:cacheprovider tests"]
+
+  benchmark:
+    image: docheal:local
+    depends_on: [docheal]
+    working_dir: /src
+    volumes:
+      - ./:/src:ro
+    entrypoint: ["sh", "-c"]
+    command: ["git config --global --add safe.directory '*' && python -m benchmarks.run --min-f1 0.9"]
+
+  demo:
+    image: docheal:local
+    depends_on: [docheal]
+    volumes:
+      - ./:/src:ro
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    entrypoint: ["sh", "/src/scripts/demo.sh"]

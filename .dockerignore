@@ -1,0 +1,12 @@
+.git
+.github
+**/__pycache__
+**/.pytest_cache
+**/.docheal
+.ruff_cache
+tests
+benchmarks
+examples
+*.egg-info
+build
+dist
