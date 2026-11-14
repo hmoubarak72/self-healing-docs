@@ -208,4 +208,4 @@ tests/              pytest suite (28 tests)
 
 ## License
 
-MIT © Hesham Moubarak
+© Hesham Moubarak
